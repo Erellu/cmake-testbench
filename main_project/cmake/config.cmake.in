@@ -1,0 +1,55 @@
+include(CMakeFindDependencyMacro)
+
+#------------------------------------------------------------------------------
+# Notification
+
+message(STATUS "Found @CMAKE_TESTBENCH_PROJECT@.")
+
+#------------------------------------------------------------------------------
+# Dependencies
+
+@CMAKE_TESTBENCH_PACKAGE_DEPENDENCIES_SETUP@
+
+#------------------------------------------------------------------------------
+# Targets
+
+include("${CMAKE_CURRENT_LIST_DIR}/@CMAKE_TESTBENCH_PROJECT@_targets.cmake")
+
+set(@CMAKE_TESTBENCH_PROJECT@_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/include")
+set(@CMAKE_TESTBENCH_PROJECT@_COMPONENTS "@CMAKE_TESTBENCH_PROJECT_components_value@")
+
+foreach(component ${@CMAKE_TESTBENCH_PROJECT@_COMPONENTS})
+    if(WIN32)
+        if(MINGW)
+            set(expected_component_lib_file "@CMAKE_INSTALL_PREFIX@/lib/lib@CMAKE_TESTBENCH_PROJECT@_${component}.dll.a")
+        elseif(MSVC)
+            set(expected_component_lib_file "@CMAKE_INSTALL_PREFIX@/lib/@CMAKE_TESTBENCH_PROJECT@_${component}.lib")
+        endif()
+    elseif(UNIX)
+        set(expected_component_lib_file "@CMAKE_INSTALL_PREFIX@/lib/lib@CMAKE_TESTBENCH_PROJECT@_${component}.so")
+    endif()
+
+    if(EXISTS "${expected_component_lib_file}")
+        set(@CMAKE_TESTBENCH_PROJECT@_${component}_FOUND TRUE)
+        set(@CMAKE_TESTBENCH_PROJECT@_${component}_LIBRARY "${expected_component_lib_file}")
+        add_library(@CMAKE_TESTBENCH_PROJECT@_${component} ALIAS "@CMAKE_TESTBENCH_PROJECT@::${component}")
+    endif()
+endforeach()
+
+unset(expected_component_lib_file) # Don't pollute user build
+
+if(WIN32)
+    if(MINGW)
+        file(GLOB @CMAKE_TESTBENCH_PROJECT@_LIBRARIES "@CMAKE_INSTALL_PREFIX@/lib/*.a")
+    elseif(MSVC)
+        file(GLOB @CMAKE_TESTBENCH_PROJECT@_LIBRARIES "@CMAKE_INSTALL_PREFIX@/lib/*.lib")
+    endif()
+elseif(UNIX)
+    file(GLOB @CMAKE_TESTBENCH_PROJECT@_LIBRARIES "@CMAKE_INSTALL_PREFIX@/lib/*.so")
+endif()
+
+#------------------------------------------------------------------------------
+# Other
+
+# Allow subprojects to use the same warnings
+set(CMAKE_TESTBENCH_WARNINGS @CMAKE_TESTBENCH_WARNINGS@)
